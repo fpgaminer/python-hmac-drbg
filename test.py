@@ -2,51 +2,54 @@
 # module.
 # HMAC_DRBG.rsp is from drbgvectors_pr_false.zip, which can be found in the DRBG
 # Test Vectors archive from http://csrc.nist.gov/groups/STM/cavp/.
+from __future__ import print_function
+
+import codecs
 import sys
 from hmac_drbg import HMAC_DRBG
 
 
 # A hacked together way to parse the rsp test vector files.
 def read_entry (f, expected_name):
-	name,value = f.readline ().strip ().split ('=')
+	name,value = f.readline ().strip ().split (b'=')
 	name = name.strip ()
 	value = value.strip ()
 
 	assert name == expected_name
 
-	return value
+	return codecs.decode (value, 'hex')
 
 algorithm = ""
 tests_performed = 0
 with open ('HMAC_DRBG.rsp', 'rb') as f:
 	while True:
 		line = f.readline ()
-		if line == '':
+		if line == b'':
 			break
 
 		line = line.strip ()
 
-		if line.startswith ('[') and not '=' in line:
+		if line.startswith (b'[') and not b'=' in line:
 			algorithm = line
 
-		if algorithm != '[SHA-256]':
+		if algorithm != b'[SHA-256]':
 			continue
 
-		if not line.startswith ('COUNT'):
+		if not line.startswith (b'COUNT'):
 			continue
 
 		# Read stimulus and expected result
-		EntropyInput = read_entry (f, 'EntropyInput').decode ('hex')
-		Nonce = read_entry (f, 'Nonce').decode ('hex')
-		PersonalizationString = read_entry (f, 'PersonalizationString').decode ('hex')
-		EntropyInputReseed = read_entry (f, 'EntropyInputReseed').decode ('hex')
-		AdditionalInputReseed = read_entry (f, 'AdditionalInputReseed').decode ('hex')
-		AdditionalInput0 = read_entry (f, 'AdditionalInput').decode ('hex')
-		AdditionalInput1 = read_entry (f, 'AdditionalInput').decode ('hex')
-		ReturnedBits = read_entry (f, 'ReturnedBits').decode ('hex')
+		EntropyInput = read_entry (f, b'EntropyInput')
+		Nonce = read_entry (f, b'Nonce')
+		PersonalizationString = read_entry (f, b'PersonalizationString')
+		EntropyInputReseed = read_entry (f, b'EntropyInputReseed')
+		AdditionalInputReseed = read_entry (f, b'AdditionalInputReseed')
+		AdditionalInput0 = read_entry (f, b'AdditionalInput')
+		AdditionalInput1 = read_entry (f, b'AdditionalInput')
+		ReturnedBits = read_entry (f, b'ReturnedBits')
 
 		# This implementation does not support additional input
-		if AdditionalInputReseed != '' or AdditionalInput0 != '' or AdditionalInput1 != '':
+		if AdditionalInputReseed != b'' or AdditionalInput0 != b'' or AdditionalInput1 != b'':
 			continue
 
 		# Test
@@ -56,18 +59,18 @@ with open ('HMAC_DRBG.rsp', 'rb') as f:
 		result = drbg.generate (len (ReturnedBits))
 
 		if result != ReturnedBits:
-			print "FAILURE"
-			print "EntropyInput = ", EntropyInput.encode ('hex')
-			print "Nonce = ", Nonce.encode ('hex')
-			print "PersonalizationString = ", PersonalizationString.encode ('hex')
-			print "EntropyInputReseed = ", EntropyInputReseed.encode ('hex')
-			print "AdditionalInputReseed = ", AdditionalInputReseed.encode ('hex')
-			print "AdditionalInput = ", AdditionalInput0.encode ('hex')
-			print "AdditionalInput = ", AdditionalInput1.encode ('hex')
-			print "ReturnedBits = ", ReturnedBits.encode ('hex')
+			print ("FAILURE")
+			print ("EntropyInput = ", codecs.encode (EntropyInput, 'hex'))
+			print ("Nonce = ", codecs.encode (Nonce, 'hex'))
+			print ("PersonalizationString = ", codecs.encode (PersonalizationString, 'hex'))
+			print ("EntropyInputReseed = ", codecs.encode (EntropyInputReseed, 'hex'))
+			print ("AdditionalInputReseed = ", codecs.encode (AdditionalInputReseed, 'hex'))
+			print ("AdditionalInput = ", codecs.encode (AdditionalInput0, 'hex'))
+			print ("AdditionalInput = ", codecs.encode (AdditionalInput1, 'hex'))
+			print ("ReturnedBits = ", codecs.encode (ReturnedBits, 'hex'))
 			sys.exit (-1)
 
 		tests_performed += 1
 
 
-print "PASSED! Performed %d tests." % tests_performed
+print ("PASSED! Performed %d tests." % tests_performed)
